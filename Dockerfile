@@ -1,20 +1,24 @@
-# Use Eclipse Temurin Java 17 base image
-FROM eclipse-temurin:17-jdk-alpine
+# Stage 1: Build
+FROM eclipse-temurin:21-jdk AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and project files
 COPY . .
 
-# Grant execute permission for mvnw
 RUN chmod +x mvnw
-
-# Build the application (this creates the .jar file)
 RUN ./mvnw clean package -DskipTests
 
-# Expose the default Spring Boot port
+# Stage 2: Run
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+# Copy the built jar file from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose Spring Boot's default port
 EXPOSE 8080
 
-# Run the Spring Boot .jar file
-CMD ["java", "-jar", "target/*.jar"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
